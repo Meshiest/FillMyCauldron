@@ -1,6 +1,10 @@
 # Fill My Cauldorn
 
-Supported MC versions: 1.21-pre4
+[Modrinth](https://modrinth.com/mod/fill-my-cauldron)
+
+![Modrinth Version](https://img.shields.io/modrinth/v/fill-my-cauldron)
+ ![Modrinth Game Versions](https://img.shields.io/modrinth/game-versions/fill-my-cauldron)
+ ![Modrinth Downloads](https://img.shields.io/modrinth/dt/fill-my-cauldron)
 
 ![demo](https://github.com/Meshiest/FillMyCauldron/assets/4142480/bcf0417b-7f0d-4c62-8658-4fc9e3834ae3) ![Fill My Cauldron Icon](./src/main/resources/assets/fill-my-cauldron/icon.png)
 
