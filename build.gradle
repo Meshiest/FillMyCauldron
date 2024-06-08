@@ -38,7 +38,7 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	
+
 }
 
 processResources {
@@ -67,6 +67,7 @@ jar {
 	from("LICENSE") {
 		rename { "${it}_${project.base.archivesName.get()}"}
 	}
+	archivesBaseName = project.archives_base_name + "+" + project.minecraft_version
 }
 
 // configure the maven publication
