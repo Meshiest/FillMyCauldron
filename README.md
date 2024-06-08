@@ -16,4 +16,10 @@ Any fluid that can be put in both a cauldron and a bucket should work!
 
 ## Contraptions (Spoilers Ahead)
 
+A contraption that feeds in one bucket at a time, pulling full lava buckets from the dispenser
+
 ![Automated lava farm](https://github.com/Meshiest/FillMyCauldron/assets/4142480/581cc8d3-a5c2-4d5e-b665-0951f8f07815)
+
+A contraption that uses the dispenser mechanic of emitting the filled bucket when the dispenser is completely full of empty buckets, and picking up the dispensed buckets with a hopper
+
+![Automated lava farm](https://github.com/Meshiest/FillMyCauldron/assets/4142480/eb59378f-33cb-4dd8-988a-83ef18b8b35e)
