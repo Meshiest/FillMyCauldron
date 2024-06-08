@@ -1,0 +1,30 @@
+{
+	"schemaVersion": 1,
+	"id": "fill-my-cauldron",
+	"version": "${version}",
+	"name": "FillMyCauldron",
+	"description": "Fill and empty cauldrons via dispenser",
+	"authors": [
+		"cake"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/fill-my-cauldron/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"io.reheatedcake.fillmycauldron.FillMyCauldron"
+		],
+		"client": []
+	},
+	"mixins": [],
+	"depends": {
+		"fabricloader": ">=0.15.11",
+		"minecraft": "~1.21-",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
