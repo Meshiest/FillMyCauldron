@@ -2,9 +2,7 @@
 
 Supported MC versions: 1.21-pre4
 
-![Fill My Cauldron Icon](./src/main/resources/assets/fill-my-cauldron/icon.png)
-
-[Demo](https://github.com/Meshiest/FillMyCauldron/assets/4142480/424d1636-5040-4841-8477-dd5b680693aa)
+![demo](https://github.com/Meshiest/FillMyCauldron/assets/4142480/bcf0417b-7f0d-4c62-8658-4fc9e3834ae3) ![Fill My Cauldron Icon](./src/main/resources/assets/fill-my-cauldron/icon.png)
 
 Ever wanted to take lava out of a cauldron with a bucket using a dispenser? Well now you can!
 
@@ -13,3 +11,9 @@ This server mod adds new behaviors to dispensers for buckets to provide the foll
 - Dispense a full bucket into an empty cauldron and place the fluid inside
 
 Any fluid that can be put in both a cauldron and a bucket should work!
+
+---
+
+## Contraptions (Spoilers Ahead)
+
+![Automated lava farm](https://github.com/Meshiest/FillMyCauldron/assets/4142480/581cc8d3-a5c2-4d5e-b665-0951f8f07815)
