@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.transfer.v1.fluid.CauldronFluidContent;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariantAttributes;
@@ -54,9 +55,11 @@ public class FillMyCauldron implements ModInitializer {
 				// get the cauldron's fluid storage
 				CauldronStorage storage = CauldronStorage.get(worldAccess, blockPos);
 
-				// cauldron is not empty
-				if (!storage.isResourceBlank() || storage.getAmount() != 0)
+				// cauldron is not empty - noop behavior rather than potentially throwing the
+				// bucket into lava
+				if (!storage.isResourceBlank() || storage.getAmount() != 0) {
 					return stack;
+				}
 
 				// empty cauldron behavior
 				try (var transaction = Transaction.openOuter()) {
@@ -84,8 +87,10 @@ public class FillMyCauldron implements ModInitializer {
 		// register the new behavior for all fluid buckets
 		for (var fluid : Registries.FLUID) {
 			var bucket = fluid.getBucketItem();
-			if (bucket == null)
+			// ensure the fluid has a bucket and every fluid is compatible with the cauldron
+			if (bucket == null || CauldronFluidContent.getForFluid(fluid) == null)
 				continue;
+
 			DispenserBlock.registerBehavior(bucket, newDrainBehavior);
 		}
 
@@ -104,28 +109,35 @@ public class FillMyCauldron implements ModInitializer {
 						.getBlockState(blockPos = pointer.pos().offset(pointer.state().get(DispenserBlock.FACING)));
 				Block block = blockState.getBlock();
 
+				var isCauldron = (block instanceof AbstractCauldronBlock);
+
+				// ensure the cauldron can be drained
+				var isCompatibleCauldron = CauldronFluidContent.getForBlock(block) != null;
+
 				// default behavior for non-cauldron blocks
-				if (!(block instanceof AbstractCauldronBlock)) {
+				if (!isCauldron || !isCompatibleCauldron) {
 					return fallbackFillBehavior.dispense(pointer, stack);
 				}
 
 				// get the cauldron's fluid storage
 				CauldronStorage storage = CauldronStorage.get(worldAccess, blockPos);
 
-				// cauldron is empty
-				if (storage.isResourceBlank() || storage.getAmount() == 0)
+				// cauldron is empty - noop behavior rather than dispensing the bucket
+				if (storage.isResourceBlank() || storage.getAmount() == 0) {
 					return stack;
+				}
 
 				var resource = storage.getResource();
 				var bucket = resource.getFluid().getBucketItem();
 
-				// no bucket for the fluid
+				// no bucket for the fluid, use default behavior
 				if (bucket == null)
-					return stack;
+					return fallbackFillBehavior.dispense(pointer, stack);
 
 				try (var transaction = Transaction.openOuter()) {
 
-					// not enough fluid to fill the bucket
+					// not enough fluid to fill the bucket - noop behavior rather than dispensing
+					// the bucket
 					if (storage.extract(resource, FluidConstants.BUCKET, transaction) != FluidConstants.BUCKET) {
 						return stack;
 					}
