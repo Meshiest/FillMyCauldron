@@ -3,27 +3,17 @@ package io.reheatedcake.fillmycauldron;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.reheatedcake.fillmycauldron.behaviors.FluidDrainBehavior;
+import io.reheatedcake.fillmycauldron.behaviors.FluidFillBehavior;
+import io.reheatedcake.fillmycauldron.core.DrainCauldronBehavior;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.transfer.v1.fluid.CauldronFluidContent;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
-import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariantAttributes;
-import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
-import net.fabricmc.fabric.impl.transfer.fluid.CauldronStorage;
-import net.fabricmc.fabric.mixin.transfer.BucketItemAccessor;
-import net.minecraft.block.AbstractCauldronBlock;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
 import net.minecraft.block.DispenserBlock;
-import net.minecraft.block.dispenser.ItemDispenserBehavior;
-import net.minecraft.item.ItemStack;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.util.math.BlockPointer;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.event.GameEvent;
 
 public class FillMyCauldron implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger("fill-my-cauldron");
@@ -32,128 +22,33 @@ public class FillMyCauldron implements ModInitializer {
 	public void onInitialize() {
 		LOGGER.info("Initializing FillMyCauldron");
 
-		var fallbackDrainBehavior = (ItemDispenserBehavior) DispenserBlock.BEHAVIORS.get(Items.WATER_BUCKET);
-		var newDrainBehavior = new ItemDispenserBehavior() {
-			private ItemStack replace(BlockPointer pointer, ItemStack oldStack, ItemStack newStack) {
-				pointer.world().emitGameEvent(null, GameEvent.FLUID_PLACE, pointer.pos());
-				return this.decrementStackWithRemainder(pointer, oldStack, newStack);
-			}
-
-			@Override
-			public ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
-				BlockPos blockPos;
-				ServerWorld worldAccess = pointer.world();
-				BlockState blockState = worldAccess
-						.getBlockState(blockPos = pointer.pos().offset(pointer.state().get(DispenserBlock.FACING)));
-				Block block = blockState.getBlock();
-
-				// default behavior for non-cauldron blocks
-				if (!(block instanceof AbstractCauldronBlock)) {
-					return fallbackDrainBehavior.dispense(pointer, stack);
-				}
-
-				// get the cauldron's fluid storage
-				CauldronStorage storage = CauldronStorage.get(worldAccess, blockPos);
-
-				// cauldron is not empty - noop behavior rather than potentially throwing the
-				// bucket into lava
-				if (!storage.isResourceBlank() || storage.getAmount() != 0) {
-					return stack;
-				}
-
-				// empty cauldron behavior
-				try (var transaction = Transaction.openOuter()) {
-					var bucketFluid = ((BucketItemAccessor) stack.getItem()).fabric_getFluid();
-					var resource = FluidVariant.of(bucketFluid);
-
-					// amount the cauldron filled is not exactly 1 bucket
-					if (storage.insert(resource, FluidConstants.BUCKET, transaction) != FluidConstants.BUCKET) {
-						return stack;
-					}
-
-					// save the fluid transfer
-					transaction.commit();
-
-					// play the fill sound
-					worldAccess.playSound(null, blockPos, FluidVariantAttributes.getEmptySound(resource),
-							SoundCategory.BLOCKS, 1.0f, 1.0f);
-
-					// replace the full bucket with an empty one
-					return this.replace(pointer, stack, Items.BUCKET.getDefaultStack());
-				}
-			}
-		};
+		var drainWithBucket = new DrainCauldronBehavior(Items.BUCKET);
 
 		// register the new behavior for all fluid buckets
 		for (var fluid : Registries.FLUID) {
+			// an empty cauldron is already filled with air...
+			if (fluid == Fluids.EMPTY) {
+				continue;
+			}
+
 			var bucket = fluid.getBucketItem();
+			var cauldron = CauldronFluidContent.getForFluid(fluid);
 			// ensure the fluid has a bucket and every fluid is compatible with the cauldron
-			if (bucket == null || CauldronFluidContent.getForFluid(fluid) == null)
+			if (bucket == null || cauldron == null)
 				continue;
 
-			DispenserBlock.registerBehavior(bucket, newDrainBehavior);
+			LOGGER.info("Registering {} as the bucket for the {} block via {}", bucket,
+					cauldron.block.asItem(),
+					FluidVariant.of(fluid).getRegistryEntry().getIdAsString());
+
+			// register full bucket + empty cauldron = full cauldron behavior
+			DispenserBlock.registerBehavior(bucket, new FluidFillBehavior(fluid, bucket, FluidConstants.BUCKET));
+
+			// register empty bucket + full cauldron = full bucket behavior
+			drainWithBucket.registerBehavior(new FluidDrainBehavior(fluid, bucket, FluidConstants.BUCKET));
 		}
 
-		var fallbackFillBehavior = (ItemDispenserBehavior) DispenserBlock.BEHAVIORS.get(Items.BUCKET);
-		DispenserBlock.registerBehavior(Items.BUCKET, new ItemDispenserBehavior() {
-			private ItemStack replace(BlockPointer pointer, ItemStack oldStack, ItemStack newStack) {
-				pointer.world().emitGameEvent(null, GameEvent.FLUID_PICKUP, pointer.pos());
-				return this.decrementStackWithRemainder(pointer, oldStack, newStack);
-			}
-
-			@Override
-			public ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
-				BlockPos blockPos;
-				ServerWorld worldAccess = pointer.world();
-				BlockState blockState = worldAccess
-						.getBlockState(blockPos = pointer.pos().offset(pointer.state().get(DispenserBlock.FACING)));
-				Block block = blockState.getBlock();
-
-				var isCauldron = (block instanceof AbstractCauldronBlock);
-
-				// ensure the cauldron can be drained
-				var isCompatibleCauldron = CauldronFluidContent.getForBlock(block) != null;
-
-				// default behavior for non-cauldron blocks
-				if (!isCauldron || !isCompatibleCauldron) {
-					return fallbackFillBehavior.dispense(pointer, stack);
-				}
-
-				// get the cauldron's fluid storage
-				CauldronStorage storage = CauldronStorage.get(worldAccess, blockPos);
-
-				// cauldron is empty - noop behavior rather than dispensing the bucket
-				if (storage.isResourceBlank() || storage.getAmount() == 0) {
-					return stack;
-				}
-
-				var resource = storage.getResource();
-				var bucket = resource.getFluid().getBucketItem();
-
-				// no bucket for the fluid, use default behavior
-				if (bucket == null)
-					return fallbackFillBehavior.dispense(pointer, stack);
-
-				try (var transaction = Transaction.openOuter()) {
-
-					// not enough fluid to fill the bucket - noop behavior rather than dispensing
-					// the bucket
-					if (storage.extract(resource, FluidConstants.BUCKET, transaction) != FluidConstants.BUCKET) {
-						return stack;
-					}
-
-					// save the fluid transfer
-					transaction.commit();
-
-					// play the fill sound
-					worldAccess.playSound(null, blockPos, FluidVariantAttributes.getFillSound(resource),
-							SoundCategory.BLOCKS, 1.0f, 1.0f);
-
-					// replace the bucket with the filled one
-					return this.replace(pointer, stack, bucket.getDefaultStack());
-				}
-			}
-		});
-
+		// Add a behavior to the dispenser for emptying cauldrons using an empty bucket
+		DispenserBlock.registerBehavior(Items.BUCKET, drainWithBucket);
 	}
 }
