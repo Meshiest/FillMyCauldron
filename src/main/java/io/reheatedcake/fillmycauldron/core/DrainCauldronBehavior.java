@@ -35,9 +35,9 @@ public class DrainCauldronBehavior extends ItemDispenserBehavior {
   }
 
   /** Find the first drain behavior for the given block */
-  private DrainerBehavior findDrainer(Block block) {
+  private DrainerBehavior findDrainer(Block block, ItemStack stack) {
     for (DrainerBehavior drainer : BEHAVIORS.values()) {
-      if (drainer.canDrainCauldron(block)) {
+      if (drainer.canDrainCauldron(block) && drainer.checkItem(stack)) {
         return drainer;
       }
     }
@@ -63,14 +63,14 @@ public class DrainCauldronBehavior extends ItemDispenserBehavior {
     }
 
     // find a drainable behavior for the cauldron
-    var drainable = findDrainer(block);
-    if (drainable == null) {
+    var drainer = findDrainer(block, stack);
+    if (drainer == null) {
       return fallbackBehavior.dispense(pointer, stack);
     }
 
     // attempt to drain the cauldron
     try {
-      switch (drainable.tryDrainCauldron(worldAccess, blockPos)) {
+      switch (drainer.tryDrainCauldron(worldAccess, blockPos, blockState)) {
         case NOOP:
           return stack;
         case FALLBACK:
@@ -84,9 +84,9 @@ public class DrainCauldronBehavior extends ItemDispenserBehavior {
     }
 
     // play the filled container sound
-    worldAccess.playSound(null, blockPos, drainable.getFillSound(), SoundCategory.BLOCKS, 1.0f, 1.0f);
+    worldAccess.playSound(null, blockPos, drainer.getFillSound(), SoundCategory.BLOCKS, 1.0f, 1.0f);
 
     // replace the empty item with the filled one
-    return this.replace(pointer, stack, drainable.getFilledItem().getDefaultStack());
+    return this.replace(pointer, stack, drainer.getFilledStack());
   }
 }

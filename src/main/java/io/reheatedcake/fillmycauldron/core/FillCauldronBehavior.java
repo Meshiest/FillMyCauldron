@@ -7,7 +7,6 @@ import net.minecraft.block.DispenserBlock;
 import net.minecraft.block.dispenser.ItemDispenserBehavior;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
@@ -22,12 +21,14 @@ import net.minecraft.world.event.GameEvent;
 public class FillCauldronBehavior extends ItemDispenserBehavior {
   private ItemDispenserBehavior fallbackBehavior = new ItemDispenserBehavior();
   private SoundEvent fillSound;
+  private Item emptyItem;
 
-  public FillCauldronBehavior(Item bucket, SoundEvent fillSound) {
+  public FillCauldronBehavior(Item emptyItem, Item fullItem, SoundEvent fillSound) {
     this.fillSound = fillSound;
+    this.emptyItem = emptyItem;
 
-    if (DispenserBlock.BEHAVIORS.containsKey(bucket)) {
-      ItemDispenserBehavior foundBehavior = (ItemDispenserBehavior) DispenserBlock.BEHAVIORS.get(bucket);
+    if (DispenserBlock.BEHAVIORS.containsKey(fullItem)) {
+      ItemDispenserBehavior foundBehavior = (ItemDispenserBehavior) DispenserBlock.BEHAVIORS.get(fullItem);
       if (foundBehavior != null) {
         this.fallbackBehavior = foundBehavior;
       }
@@ -39,7 +40,7 @@ public class FillCauldronBehavior extends ItemDispenserBehavior {
     return this.decrementStackWithRemainder(pointer, oldStack, newStack);
   }
 
-  protected DispenseResult tryFillCauldron(ServerWorld world, BlockPos pos) {
+  protected DispenseResult tryFillCauldron(ServerWorld world, BlockPos pos, BlockState state, ItemStack stack) {
     return DispenseResult.NOOP;
   }
 
@@ -57,7 +58,7 @@ public class FillCauldronBehavior extends ItemDispenserBehavior {
     }
 
     try {
-      switch (tryFillCauldron(worldAccess, blockPos)) {
+      switch (tryFillCauldron(worldAccess, blockPos, blockState, stack)) {
         case NOOP:
           return stack;
         case FALLBACK:
@@ -74,7 +75,7 @@ public class FillCauldronBehavior extends ItemDispenserBehavior {
     worldAccess.playSound(null, blockPos, fillSound, SoundCategory.BLOCKS, 1.0f, 1.0f);
 
     // replace the full bucket with an empty one
-    return this.replace(pointer, stack, Items.BUCKET.getDefaultStack());
+    return this.replace(pointer, stack, this.emptyItem.getDefaultStack());
   }
 
 }

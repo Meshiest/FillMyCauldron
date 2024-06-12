@@ -8,23 +8,28 @@ import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariantAttributes;
 import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
 import net.fabricmc.fabric.impl.transfer.fluid.CauldronStorage;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.math.BlockPos;
 
-public class FluidDrainBehavior implements DrainerBehavior {
+public class FluidDrainBehavior extends DrainerBehavior {
   private Fluid fluid;
-  private FluidVariant fluidResource;
+  private SoundEvent fillSound;
   private Item item;
   private long fluidAmount;
 
-  public FluidDrainBehavior(Fluid fluid, Item item, long amount) {
+  public FluidDrainBehavior(Fluid fluid, Item item, long amount, SoundEvent fillSound) {
+    this.fillSound = fillSound;
     this.item = item;
     this.fluid = fluid;
     this.fluidAmount = amount;
-    this.fluidResource = FluidVariant.of(fluid);
+  }
+
+  public FluidDrainBehavior(Fluid fluid, Item item, long amount) {
+    this(fluid, item, amount, FluidVariantAttributes.getFillSound(FluidVariant.of(fluid)));
   }
 
   public Boolean canDrainCauldron(Block block) {
@@ -37,10 +42,10 @@ public class FluidDrainBehavior implements DrainerBehavior {
   }
 
   public SoundEvent getFillSound() {
-    return FluidVariantAttributes.getFillSound(fluidResource);
+    return fillSound;
   }
 
-  public DispenseResult tryDrainCauldron(ServerWorld world, BlockPos pos) {
+  public DispenseResult tryDrainCauldron(ServerWorld world, BlockPos pos, BlockState state) {
     CauldronStorage storage = CauldronStorage.get(world, pos);
 
     // cauldron is empty or does not have enough fluid
