@@ -1,12 +1,12 @@
 package io.reheatedcake.fillmycauldron.core;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.core.BlockPos;
 
 /**
  * The `DrainerBehavior` class represents behaviors for converting an empty
@@ -14,7 +14,7 @@ import net.minecraft.util.math.BlockPos;
  */
 public abstract class DrainerBehavior {
   /** Check if a given cauldron block can be drained */
-  public abstract Boolean canDrainCauldron(Block block);
+  public abstract boolean canDrainCauldron(Block block);
 
   /** Get the fileld item for the drainable */
   public abstract Item getFilledItem();
@@ -24,11 +24,11 @@ public abstract class DrainerBehavior {
    * the item)
    */
   public ItemStack getFilledStack() {
-    return getFilledItem().getDefaultStack();
+    return getFilledItem().getDefaultInstance();
   }
 
   /** Check if the item stack is applicable to this drainer */
-  protected Boolean checkItem(ItemStack stack) {
+  protected boolean checkItem(ItemStack stack) {
     return true;
   }
 
@@ -36,5 +36,5 @@ public abstract class DrainerBehavior {
   public abstract SoundEvent getFillSound();
 
   /** Attempt to drain the bucket into the cauldron */
-  public abstract DispenseResult tryDrainCauldron(ServerWorld world, BlockPos pos, BlockState state);
+  public abstract DispenseResult tryDrainCauldron(ServerLevel world, BlockPos pos, BlockState state);
 }

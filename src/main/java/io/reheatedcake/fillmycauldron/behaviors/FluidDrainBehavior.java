@@ -1,19 +1,20 @@
 package io.reheatedcake.fillmycauldron.behaviors;
 
 import io.reheatedcake.fillmycauldron.core.DrainerBehavior;
+
 import io.reheatedcake.fillmycauldron.core.DispenseResult;
 import net.fabricmc.fabric.api.transfer.v1.fluid.CauldronFluidContent;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariantAttributes;
 import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
 import net.fabricmc.fabric.impl.transfer.fluid.CauldronStorage;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.fluid.Fluid;
-import net.minecraft.item.Item;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.item.Item;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.core.BlockPos;
 
 public class FluidDrainBehavior extends DrainerBehavior {
   private Fluid fluid;
@@ -32,7 +33,7 @@ public class FluidDrainBehavior extends DrainerBehavior {
     this(fluid, item, amount, FluidVariantAttributes.getFillSound(FluidVariant.of(fluid)));
   }
 
-  public Boolean canDrainCauldron(Block block) {
+  public boolean canDrainCauldron(Block block) {
     var content = CauldronFluidContent.getForBlock(block);
     return content != null && content.fluid.equals(fluid);
   }
@@ -45,7 +46,7 @@ public class FluidDrainBehavior extends DrainerBehavior {
     return fillSound;
   }
 
-  public DispenseResult tryDrainCauldron(ServerWorld world, BlockPos pos, BlockState state) {
+  public DispenseResult tryDrainCauldron(ServerLevel world, BlockPos pos, BlockState state) {
     CauldronStorage storage = CauldronStorage.get(world, pos);
 
     // cauldron is empty or does not have enough fluid

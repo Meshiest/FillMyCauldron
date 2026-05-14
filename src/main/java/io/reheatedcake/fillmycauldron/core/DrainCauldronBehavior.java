@@ -3,26 +3,27 @@ package io.reheatedcake.fillmycauldron.core;
 import java.util.Map;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import net.minecraft.block.AbstractCauldronBlock;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.DispenserBlock;
-import net.minecraft.block.dispenser.ItemDispenserBehavior;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.util.math.BlockPointer;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.event.GameEvent;
+import net.minecraft.world.level.block.AbstractCauldronBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.DispenserBlock;
+import net.minecraft.core.dispenser.DefaultDispenseItemBehavior;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.core.dispenser.BlockSource;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.gameevent.GameEvent;
 
-public class DrainCauldronBehavior extends ItemDispenserBehavior {
-  private ItemDispenserBehavior fallbackBehavior = new ItemDispenserBehavior();
+public class DrainCauldronBehavior extends DefaultDispenseItemBehavior {
+  private DefaultDispenseItemBehavior fallbackBehavior = new DefaultDispenseItemBehavior();
   public final Map<Item, DrainerBehavior> BEHAVIORS = new Object2ObjectOpenHashMap<>();
 
   public DrainCauldronBehavior(Item container) {
-    if (DispenserBlock.BEHAVIORS.containsKey(container)) {
-      ItemDispenserBehavior foundBehavior = (ItemDispenserBehavior) DispenserBlock.BEHAVIORS.get(container);
+    if (DispenserBlock.DISPENSER_REGISTRY.containsKey(container)) {
+      DefaultDispenseItemBehavior foundBehavior = (DefaultDispenseItemBehavior) DispenserBlock.DISPENSER_REGISTRY
+          .get(container);
       if (foundBehavior != null) {
         this.fallbackBehavior = foundBehavior;
       }
@@ -44,17 +45,17 @@ public class DrainCauldronBehavior extends ItemDispenserBehavior {
     return null;
   }
 
-  private ItemStack replace(BlockPointer pointer, ItemStack oldStack, ItemStack newStack) {
-    pointer.world().emitGameEvent(null, GameEvent.FLUID_PLACE, pointer.pos());
-    return this.decrementStackWithRemainder(pointer, oldStack, newStack);
+  private ItemStack replace(BlockSource pointer, ItemStack oldStack, ItemStack newStack) {
+    pointer.level().gameEvent(null, GameEvent.FLUID_PLACE, pointer.pos());
+    return this.consumeWithRemainder(pointer, oldStack, newStack);
   }
 
   @Override
-  public ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
+  public ItemStack execute(BlockSource pointer, ItemStack stack) {
     BlockPos blockPos;
-    ServerWorld worldAccess = pointer.world();
+    ServerLevel worldAccess = pointer.level();
     BlockState blockState = worldAccess
-        .getBlockState(blockPos = pointer.pos().offset(pointer.state().get(DispenserBlock.FACING)));
+        .getBlockState(blockPos = pointer.pos().relative(pointer.state().getValue(DispenserBlock.FACING)));
     Block block = blockState.getBlock();
 
     // default behavior for non-cauldron blocks
@@ -84,7 +85,7 @@ public class DrainCauldronBehavior extends ItemDispenserBehavior {
     }
 
     // play the filled container sound
-    worldAccess.playSound(null, blockPos, drainer.getFillSound(), SoundCategory.BLOCKS, 1.0f, 1.0f);
+    worldAccess.playSound(null, blockPos, drainer.getFillSound(), SoundSource.BLOCKS, 1.0f, 1.0f);
 
     // replace the empty item with the filled one
     return this.replace(pointer, stack, drainer.getFilledStack());
